@@ -1,0 +1,3 @@
+build_*
+extern/SDL3/linux
+project.raddbg_project
