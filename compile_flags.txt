@@ -1,0 +1,6 @@
+-std=c++17
+-Isrc
+-Iextern/SDL3/win/include
+-Iextern/imgui
+-Iextern/im3d
+-DBUILD_DEBUG
