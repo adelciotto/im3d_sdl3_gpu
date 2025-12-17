@@ -523,6 +523,7 @@ void im3d_sdl3_gpu_render_draw_data(
   SDL_assert(render_pass != nullptr);
 
   const Im3d::AppData& app_data = Im3d::GetAppData();
+  if (app_data.m_viewportSize.x <= 0.0f || app_data.m_viewportSize.y <= 0.0f) { return; }
 
   {
     SDL_GPUBufferBinding binding = {};

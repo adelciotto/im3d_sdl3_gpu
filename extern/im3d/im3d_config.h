@@ -1,7 +1,7 @@
 #pragma once
 
 #include <HandmadeMath.h>
-#include <SDL3/SDL_assert.h>
+#include <SDL3/SDL.h>
 
 // Deprecated behavior.
 #define IM3D_USE_DEPRECATED_DRAW_CONE 1 // Enable deprecated DrawCone() and DrawConeFilled() API (deprecated v1.18).
@@ -10,8 +10,8 @@
 #define IM3D_ASSERT(e) SDL_assert(e)
 
 // User-defined malloc/free. Define both or neither (default is cstdlib malloc()/free()).
-//#define IM3D_MALLOC(size) malloc(size)
-//#define IM3D_FREE(ptr) free(ptr)
+#define IM3D_MALLOC(size) SDL_malloc(size)
+#define IM3D_FREE(ptr) SDL_free(ptr)
 
 // User-defined API declaration (e.g. __declspec(dllexport)).
 //#define IM3D_API
@@ -26,10 +26,10 @@
 #define IM3D_VERTEX_ALIGNMENT 16
 
 // Enable internal culling for primitives (everything drawn between Begin*()/End()). The application must set a culling frustum via AppData.
-//#define IM3D_CULL_PRIMITIVES 1
+#define IM3D_CULL_PRIMITIVES 1
 
 // Enable internal culling for gizmos. The application must set a culling frustum via AppData.
-//#define IM3D_CULL_GIZMOS 1
+#define IM3D_CULL_GIZMOS 1
 
 // Set a layer ID for all gizmos to use internally.
 //#define IM3D_GIZMO_LAYER_ID 0xD4A1B5
