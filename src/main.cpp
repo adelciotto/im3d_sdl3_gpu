@@ -1,28 +1,37 @@
+// -- Local Header Includes ---------------------------------------------------
+#include "im3d_sdl3_gpu.h"
+
 // -- External Header Includes ------------------------------------------------
 #include <SDL3/SDL.h>
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL_main.h>
+#include <HandmadeMath.h>
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlgpu3.h>
-#include "../im3d_sdl3_gpu.h"
 
 // -- Std Header Includes -----------------------------------------------------
-#include <array>
-#include <string>
-#include <vector>
+#include <new>
 
 // -- Local Source Includes ---------------------------------------------------
 #include "common.cpp"
 #include "imgui_font.cpp"
+
+struct Camera {
+  HMM_Vec3 position  = HMM_V3(0.0f, 0.5f, 3.0f);
+  HMM_Vec3 direction = HMM_NormV3(HMM_V3(0.0f, -0.2f, -1.0f));
+  float    fov_rad   = HMM_AngleDeg(50.0f);
+  float    near_clip = 0.1f;
+  float    far_clip  = 500.0f;
+  bool     ortho     = false;
+};
 
 struct App_State {
   SDL_GPUDevice*       device;
   SDL_Window*          window;
   SDL_GPUTextureFormat swapchain_texture_format;
   float                content_scale;
-  int                  window_width_pixels;
-  int                  window_height_pixels;
+  HMM_Vec2             window_size_pixels;
   bool                 window_minimized;
   uint64_t             count_per_second;
   uint64_t             last_counter;
@@ -30,12 +39,12 @@ struct App_State {
   double               elapsed_time;
   bool                 fullscreen = false;
 
+  Camera  camera;
   ImFont* imgui_font;
 };
 
 static void on_window_pixel_size_changed(App_State* as, int width, int height) {
-  as->window_width_pixels  = width;
-  as->window_height_pixels = height;
+  as->window_size_pixels = HMM_V2(static_cast<float>(width), static_cast<float>(height));
 }
 
 static void on_display_content_scale_changed(App_State* as, float content_scale) {
@@ -59,11 +68,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   }
   *appstate = as;
 
-  SDL_GPUShaderFormat format_flags = 0;
+  SDL_GPUShaderFormat format_flags =
+      SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL | SDL_GPU_SHADERFORMAT_SPIRV;
+  const char* driver;
 #ifdef SDL_PLATFORM_WINDOWS
-  format_flags |= SDL_GPU_SHADERFORMAT_DXIL;
+  driver = "direct3d12";
 #elif SDL_PLATFORM_LINUX
-  format_flags |= SDL_GPU_SHADERFORMAT_SPIRV;
+  driver = "vulkan";
 #else
 #error "Platform not supported"
 #endif
@@ -71,7 +82,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 #ifdef BUILD_DEBUG
   debug = true;
 #endif
-  as->device = SDL_CreateGPUDevice(format_flags, debug, nullptr);
+  as->device = SDL_CreateGPUDevice(format_flags, debug, driver);
   if (as->device == nullptr) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create gpu device: %s", SDL_GetError());
     return SDL_APP_FAILURE;
@@ -121,7 +132,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     ImGui::StyleColorsDark();
-    auto& style         = ImGui::GetStyle();
+    ImGuiStyle& style   = ImGui::GetStyle();
     style.ItemSpacing.y = 8.0f;
 
     ImFontConfig font_cfg;
@@ -136,11 +147,18 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   }
 
   {
+    Im3d_SDL3_GPU_Init_Info info = {};
+    info.device                  = as->device;
+    info.color_target_format     = as->swapchain_texture_format;
+    if (!im3d_sdl3_gpu_init(info)) { return SDL_APP_FAILURE; }
+  }
+
+  {
     ImGui_ImplSDL3_InitForSDLGPU(as->window);
 
     ImGui_ImplSDLGPU3_InitInfo init_info = {};
     init_info.Device                     = as->device;
-    init_info.ColorTargetFormat          = SDL_GetGPUSwapchainTextureFormat(as->device, as->window);
+    init_info.ColorTargetFormat          = as->swapchain_texture_format;
     ImGui_ImplSDLGPU3_Init(&init_info);
   }
 
@@ -219,6 +237,41 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   static constexpr double TIME_RESET_PERIOD = 3600.0;
   if (as->elapsed_time >= TIME_RESET_PERIOD) { as->elapsed_time = 0.0; }
 
+  float    aspect_ratio = as->window_size_pixels.X / as->window_size_pixels.Y;
+  HMM_Vec3 cam_target   = as->camera.position + as->camera.direction;
+  HMM_Vec3 world_up     = HMM_V3(0.0f, 1.0f, 0.0f);
+  HMM_Mat4 view_matrix  = HMM_LookAt_RH(as->camera.position, {}, world_up);
+  HMM_Mat4 proj_matrix  = as->camera.ortho ? HMM_Orthographic_RH_ZO(
+                                                -5.0f,
+                                                5.0f,
+                                                -5.0f,
+                                                5.0f,
+                                                as->camera.near_clip,
+                                                as->camera.far_clip)
+                                           : HMM_Perspective_RH_ZO(
+                                                as->camera.fov_rad,
+                                                aspect_ratio,
+                                                as->camera.near_clip,
+                                                as->camera.far_clip);
+
+  Im3d_SDL3_GPU_Frame_Info frame_info = {};
+  frame_info.delta_time               = static_cast<float>(delta_time);
+  frame_info.viewport_size            = as->window_size_pixels;
+  frame_info.view_position            = as->camera.position;
+  frame_info.view_direction           = as->camera.direction;
+  frame_info.world_to_view_transform  = view_matrix;
+  frame_info.view_to_clip_transform   = proj_matrix;
+  frame_info.ortho                    = as->camera.ortho;
+  frame_info.fov_rad                  = as->camera.fov_rad;
+  im3d_sdl3_gpu_new_frame(frame_info);
+  Im3d::NewFrame();
+  Im3d::PushDrawState();
+  Im3d::SetSize(4.0f);
+  Im3d::DrawAlignedBox(HMM_V3(-1.0f, 1.0f, -1.0f), HMM_V3(1.0f, -1.0f, 1.0f));
+  Im3d::DrawXyzAxes();
+  Im3d::PopDrawState();
+  Im3d::EndFrame();
+
   ImGui_ImplSDLGPU3_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
@@ -249,16 +302,20 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   }
 
   if (swapchain_texture != nullptr && !as->window_minimized) {
+    im3d_sdl3_gpu_prepare_draw_data(cmd_buf);
+
     ImDrawData* draw_data = ImGui::GetDrawData();
     ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, cmd_buf);
 
     {
       SDL_GPUColorTargetInfo target_info = {};
       target_info.texture                = swapchain_texture;
-      target_info.load_op                = SDL_GPU_LOADOP_DONT_CARE;
+      target_info.load_op                = SDL_GPU_LOADOP_CLEAR;
       target_info.store_op               = SDL_GPU_STOREOP_STORE;
       SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(cmd_buf, &target_info, 1, nullptr);
       defer(SDL_EndGPURenderPass(render_pass));
+
+      im3d_sdl3_gpu_render_draw_data(cmd_buf, render_pass);
 
       ImGui_ImplSDLGPU3_RenderDrawData(draw_data, cmd_buf, render_pass);
     }
@@ -277,6 +334,8 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
   ImGui_ImplSDL3_Shutdown();
   ImGui_ImplSDLGPU3_Shutdown();
   ImGui::DestroyContext();
+
+  im3d_sdl3_gpu_shutdown();
 
   SDL_ReleaseWindowFromGPUDevice(as->device, as->window);
   SDL_DestroyWindow(as->window);

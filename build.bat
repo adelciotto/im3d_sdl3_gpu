@@ -20,7 +20,7 @@ if "%debug%"=="1" set cl_compile=%cl_debug_common%
 if "%release%"=="1" set cl_compile=%cl_release_common%
 
 :: --- Example Compile/Link Definitions --------------------------------------
-set cl_example_includes=/I..\extern\HandmadeMath /I..\extern\SDL3\win\include /I..\extern\imgui /I..\extern\im3d
+set cl_example_includes=/I..\extern\SDL3\win\include /I..\extern\HandmadeMath /I..\extern\imgui /I..\extern\im3d
 set cl_example_debug=%cl_debug_common% /I..\extern\SDL3_shadercross\win\include %cl_example_includes%
 set cl_example_release=%cl_release_common% %cl_example_includes%
 set cl_example_link=/link ..\extern\SDL3\win\lib\x64\SDL3.lib shell32.lib /subsystem:console
@@ -45,26 +45,26 @@ pushd %build_dir%
 
 if "%shaders%"=="1" (
 echo Compiling shaders...
-%shadercross_vertex% -DPRIMITIVE_KIND_POINTS ..\src\im3d.hlsl -o .shaders\im3d_points.vert.dxil || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_POINTS ..\src\im3d.hlsl -o .shaders\im3d_points.frag.dxil || exit /b 1
-%shadercross_vertex% -DPRIMITIVE_KIND_LINES ..\src\im3d.hlsl -o .shaders\im3d_lines.vert.dxil || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_LINES ..\src\im3d.hlsl -o .shaders\im3d_lines.frag.dxil || exit /b 1
-%shadercross_vertex% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d.hlsl -o .shaders\im3d_triangles.vert.dxil || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d.hlsl -o .shaders\im3d_triangles.frag.dxil || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_POINTS ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_points.vert.dxil || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_POINTS ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_points.frag.dxil || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_LINES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_lines.vert.dxil || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_LINES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_lines.frag.dxil || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_triangles.vert.dxil || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_triangles.frag.dxil || exit /b 1
 
-%shadercross_vertex% -DPRIMITIVE_KIND_POINTS ..\src\im3d.hlsl -o .shaders\im3d_points.vert.spv || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_POINTS ..\src\im3d.hlsl -o .shaders\im3d_points.frag.spv || exit /b 1
-%shadercross_vertex% -DPRIMITIVE_KIND_LINES ..\src\im3d.hlsl -o .shaders\im3d_lines.vert.spv || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_LINES ..\src\im3d.hlsl -o .shaders\im3d_lines.frag.spv || exit /b 1
-%shadercross_vertex% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d.hlsl -o .shaders\im3d_triangles.vert.spv || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d.hlsl -o .shaders\im3d_triangles.frag.spv || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_POINTS ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_points.vert.spv || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_POINTS ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_points.frag.spv || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_LINES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_lines.vert.spv || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_LINES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_lines.frag.spv || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_triangles.vert.spv || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_triangles.frag.spv || exit /b 1
 
-%shadercross_vertex% -DPRIMITIVE_KIND_POINTS ..\src\im3d.hlsl -o .shaders\im3d_points.vert.msl || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_POINTS ..\src\im3d.hlsl -o .shaders\im3d_points.frag.msl || exit /b 1
-%shadercross_vertex% -DPRIMITIVE_KIND_LINES ..\src\im3d.hlsl -o .shaders\im3d_lines.vert.msl || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_LINES ..\src\im3d.hlsl -o .shaders\im3d_lines.frag.msl || exit /b 1
-%shadercross_vertex% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d.hlsl -o .shaders\im3d_triangles.vert.msl || exit /b 1
-%shadercross_fragment% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d.hlsl -o .shaders\im3d_triangles.frag.msl || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_POINTS ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_points.vert.msl || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_POINTS ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_points.frag.msl || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_LINES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_lines.vert.msl || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_LINES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_lines.frag.msl || exit /b 1
+%shadercross_vertex% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_triangles.vert.msl || exit /b 1
+%shadercross_fragment% -DPRIMITIVE_KIND_TRIANGLES ..\src\im3d_sdl3_gpu.hlsl -o .shaders\im3d_triangles.frag.msl || exit /b 1
 
 echo Compiling shaders_to_c_arrays...
 %cl_compile% ..\src\shaders_to_c_arrays.cpp -DOUT_DIR=\"%root_dir%/src\" /link /out:shaders_to_c_arrays.exe || exit /b 1
@@ -74,7 +74,7 @@ shaders_to_c_arrays.exe || exit /b 1
 )
 
 echo Compiling example...
-%cl_example_compile% ..\src\example\main.cpp ^
+%cl_example_compile% ..\src\main.cpp ^
                      ..\src\im3d_sdl3_gpu.cpp ^
                      ..\extern\im3d\im3d.cpp ^
                      ..\extern\imgui\imgui.cpp ^

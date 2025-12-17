@@ -2,8 +2,7 @@ static const float ANTIALIASING = 2.0;
 
 #if defined(VERTEX_SHADER)
 struct Vertex_Data {
-  float3 position;
-  float  size;
+  float4 position_size;
   uint   color;
 };
 
@@ -29,6 +28,7 @@ struct Output {
 cbuffer Uniform_Block : register(b0, space1) {
   float4x4 world_to_clip_transform : packoffset(c0);
   float2   resolution : packoffset(c4);
+  uint     instance_offset : packoffset(c4.z);
 }
 
 float4 uint_to_rgba(uint u) {
@@ -44,31 +44,33 @@ Output main(Input input) {
   Output output;
 
 #if defined(PRIMITIVE_KIND_POINTS)
-  Vertex_Data vertex_data = Data_Buffer[input.instance_id];
+  Vertex_Data vertex_data = Data_Buffer[instance_offset + input.instance_id];
 
-  output.size  = max(vertex_data.size, ANTIALIASING);
+  output.size  = max(vertex_data.position_size.w, ANTIALIASING);
   output.color = uint_to_rgba(vertex_data.color);
   output.color.a *= smoothstep(0.0, 1.0, output.size / ANTIALIASING);
 
-  output.position = mul(world_to_clip_transform, float4(vertex_data.position, 1.0));
+  output.position = mul(world_to_clip_transform, float4(vertex_data.position_size.xyz, 1.0));
   float2 scale    = 1.0 / resolution * output.size;
   output.position.xy += input.position.xy * scale * output.position.w;
 
   output.texcoord = input.position.xy * 0.5 + 0.5;
 
 #elif defined(PRIMITIVE_KIND_LINES)
-  uint        instance_id_0 = input.instance_id * 2;
+  uint        instance_id_0 = instance_offset + input.instance_id * 2;
   uint        instance_id_1 = instance_id_0 + 1;
   uint        instance_id   = (input.vertex_id % 2 == 0) ? instance_id_0 : instance_id_1;
   Vertex_Data vertex_data   = Data_Buffer[instance_id];
 
-  output.size  = max(vertex_data.size, ANTIALIASING);
+  output.size  = max(vertex_data.position_size.w, ANTIALIASING);
   output.color = uint_to_rgba(vertex_data.color);
   output.color.a *= smoothstep(0.0, 1.0, output.size / ANTIALIASING);
   output.edge_distance = output.size * input.position.y;
 
-  float4 pos_0     = mul(world_to_clip_transform, float4(Data_Buffer[instance_id_0].position, 1.0));
-  float4 pos_1     = mul(world_to_clip_transform, float4(Data_Buffer[instance_id_1].position, 1.0));
+  float4 pos_0 =
+      mul(world_to_clip_transform, float4(Data_Buffer[instance_id_0].position_size.xyz, 1.0));
+  float4 pos_1 =
+      mul(world_to_clip_transform, float4(Data_Buffer[instance_id_1].position_size.xyz, 1.0));
   float2 direction = (pos_0.xy / pos_0.w) - (pos_1.xy / pos_1.w);
   direction        = normalize(float2(direction.x, direction.y * resolution.y / resolution.x));
   float2 tng       = float2(-direction.y, direction.x) * output.size / resolution;
@@ -77,9 +79,10 @@ Output main(Input input) {
   output.position.xy += tng * input.position.y * output.position.w;
 
 #elif defined(PRIMITIVE_KIND_TRIANGLES)
-  Vertex_Data vertex_data = Data_Buffer[input.instance_id * 3 + input.vertex_id];
-  output.color            = uint_to_rgba(vertex_data.color);
-  output.position         = mul(world_to_clip_transform, float4(vertex_data.position, 1.0));
+  Vertex_Data vertex_data =
+      Data_Buffer[(instance_offset + input.instance_id * 3) + input.vertex_id];
+  output.color    = uint_to_rgba(vertex_data.color);
+  output.position = mul(world_to_clip_transform, float4(vertex_data.position_size.xyz, 1.0));
 #endif
 
   return output;
