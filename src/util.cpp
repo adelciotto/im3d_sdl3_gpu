@@ -1,11 +1,8 @@
 #include "util.h"
 
-#include <cmath>
-
-// -- Local Helpers -----------------------------------------------------------
+// -- Camera ------------------------------------------------------------------
 
 static HMM_Vec3 vec3_rotate_by_axis_angle(HMM_Vec3 v, HMM_Vec3 axis, float angle_rad) {
-  // Rodrigues' rotation formula
   float cos_a = cosf(angle_rad);
   float sin_a = sinf(angle_rad);
 
@@ -26,8 +23,6 @@ static float vec3_angle(HMM_Vec3 a, HMM_Vec3 b) {
   cos_angle       = HMM_Clamp(-1.0f, cos_angle, 1.0f);
   return acosf(cos_angle);
 }
-
-// -- Camera ------------------------------------------------------------------
 
 HMM_Vec3 camera_forward(const Camera& camera) {
   return HMM_NormV3(camera.target - camera.position);
