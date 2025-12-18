@@ -1,11 +1,14 @@
 # IM3D SDL3 GPU EXAMPLE
 
-This repository contains a SDL3 GPU backend for [im3d](https://github.com/john-chapman/im3d) and an example app demonstrating it's usage.
+This repository contains an example SDL3 GPU back-end for [im3d](https://github.com/john-chapman/im3d) and a demo app demonstrating it's usage.
 
 ![preview](preview.png)
 
 
-If you just want to use this backend
+If you just want to use this back-end you can grab the following files from the `src` folder and compile them with your application.
+- `im3d_sdl3_gpu.h`
+- `im3d_sdl3_gpu_shaders.h`
+- `im3d_sdl3_gpu.cpp`
 
 ## Build
 
