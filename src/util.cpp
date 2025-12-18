@@ -2,40 +2,26 @@
 
 // -- Camera ------------------------------------------------------------------
 
-static HMM_Vec3 vec3_rotate_by_axis_angle(HMM_Vec3 v, HMM_Vec3 axis, float angle_rad) {
-  float cos_a = cosf(angle_rad);
-  float sin_a = sinf(angle_rad);
-
-  HMM_Vec3 cross = HMM_Cross(axis, v);
-  float    dot   = HMM_DotV3(axis, v);
-
-  HMM_Vec3 result;
-  result.X = v.X * cos_a + cross.X * sin_a + axis.X * dot * (1.0f - cos_a);
-  result.Y = v.Y * cos_a + cross.Y * sin_a + axis.Y * dot * (1.0f - cos_a);
-  result.Z = v.Z * cos_a + cross.Z * sin_a + axis.Z * dot * (1.0f - cos_a);
-  return result;
-}
-
 static float vec3_angle(HMM_Vec3 a, HMM_Vec3 b) {
-  float dot       = HMM_DotV3(a, b);
-  float len_prod  = HMM_LenV3(a) * HMM_LenV3(b);
+  float dot       = HMM_Dot(a, b);
+  float len_prod  = HMM_Len(a) * HMM_Len(b);
   float cos_angle = dot / len_prod;
   cos_angle       = HMM_Clamp(-1.0f, cos_angle, 1.0f);
-  return acosf(cos_angle);
+  return HMM_ACosF(cos_angle);
 }
 
 HMM_Vec3 camera_forward(const Camera& camera) {
-  return HMM_NormV3(camera.target - camera.position);
+  return HMM_Norm(camera.target - camera.position);
 }
 
 HMM_Vec3 camera_up(const Camera& camera) {
-  return HMM_NormV3(camera.up);
+  return HMM_Norm(camera.up);
 }
 
 HMM_Vec3 camera_right(const Camera& camera) {
   HMM_Vec3 forward = camera_forward(camera);
   HMM_Vec3 up      = camera_up(camera);
-  return HMM_NormV3(HMM_Cross(forward, up));
+  return HMM_Norm(HMM_Cross(forward, up));
 }
 
 HMM_Mat4 camera_view_matrix(const Camera& camera) {
@@ -74,7 +60,7 @@ void camera_move_right(Camera* camera, float distance, bool move_in_world_plane)
 
   if (move_in_world_plane) {
     right.Y = 0.0f;
-    right   = HMM_NormV3(right);
+    right   = HMM_Norm(right);
   }
 
   right            = right * distance;
@@ -90,7 +76,7 @@ void camera_move_up(Camera* camera, float distance) {
 }
 
 void camera_move_to_target(Camera* camera, float delta) {
-  float distance = HMM_LenV3(camera->target - camera->position);
+  float distance = HMM_Len(camera->target - camera->position);
   distance += delta;
 
   if (distance <= 0.0f) { distance = 0.001f; }
@@ -102,8 +88,7 @@ void camera_move_to_target(Camera* camera, float delta) {
 void camera_yaw(Camera* camera, float angle_rad, bool rotate_around_target) {
   HMM_Vec3 up              = camera_up(*camera);
   HMM_Vec3 target_position = camera->target - camera->position;
-
-  target_position = vec3_rotate_by_axis_angle(target_position, up, angle_rad);
+  target_position          = HMM_RotateV3AxisAngle_RH(target_position, up, angle_rad);
 
   if (rotate_around_target) {
     camera->position = camera->target - target_position;
@@ -133,7 +118,7 @@ void camera_pitch(
   }
 
   HMM_Vec3 right  = camera_right(*camera);
-  target_position = vec3_rotate_by_axis_angle(target_position, right, angle_rad);
+  target_position = HMM_RotateV3AxisAngle_RH(target_position, right, angle_rad);
 
   if (rotate_around_target) {
     camera->position = camera->target - target_position;
@@ -141,10 +126,10 @@ void camera_pitch(
     camera->target = camera->position + target_position;
   }
 
-  if (rotate_up) { camera->up = vec3_rotate_by_axis_angle(camera->up, right, angle_rad); }
+  if (rotate_up) { camera->up = HMM_RotateV3AxisAngle_RH(camera->up, right, angle_rad); }
 }
 
 void camera_roll(Camera* camera, float angle_rad) {
   HMM_Vec3 forward = camera_forward(*camera);
-  camera->up       = vec3_rotate_by_axis_angle(camera->up, forward, angle_rad);
+  camera->up       = HMM_RotateV3AxisAngle_RH(camera->up, forward, angle_rad);
 }

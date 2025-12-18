@@ -121,6 +121,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
+  SDL_SetGPUSwapchainParameters(
+      as->device,
+      as->window,
+      SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+      SDL_GPU_PRESENTMODE_VSYNC);
   as->swapchain_texture_format = SDL_GetGPUSwapchainTextureFormat(as->device, as->window);
 
   {
