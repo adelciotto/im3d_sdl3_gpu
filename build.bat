@@ -75,6 +75,7 @@ shaders_to_c_arrays.exe || exit /b 1
 
 echo Compiling example...
 %cl_example_compile% ..\src\main.cpp ^
+                     ..\src\util.cpp ^
                      ..\src\im3d_sdl3_gpu.cpp ^
                      ..\extern\im3d\im3d.cpp ^
                      ..\extern\imgui\imgui.cpp ^

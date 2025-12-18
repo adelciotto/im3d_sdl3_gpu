@@ -1,9 +1,6 @@
-// -- Local Header Includes ---------------------------------------------------
 #include "im3d_sdl3_gpu.h"
+#include "im3d_sdl3_gpu_shaders.h"
 #include "im3d_math.h"
-
-// -- Local Source Includes ---------------------------------------------------
-#include "im3d_sdl3_gpu_shaders.cpp"
 
 struct Vertex_Uniforms {
   Im3d::Mat4 world_to_clip_transform;
@@ -21,7 +18,8 @@ static struct {
   SDL_GPUTransferBuffer*   transfer_buffer;
   uint32_t                 data_buffer_size;
   uint32_t                 total_vertex_count;
-  Im3d::Mat4               world_to_clip_transform = Im3d::Mat4(1.0f);
+  Im3d::Mat4               world_to_clip_transform;
+  int                      keyboard_state[SDL_SCANCODE_COUNT];
 } g_data = {};
 
 bool im3d_sdl3_gpu_init(const Im3d_SDL3_GPU_Init_Info& info) {
@@ -37,7 +35,7 @@ bool im3d_sdl3_gpu_init(const Im3d_SDL3_GPU_Init_Info& info) {
     const uint8_t *shader_triangles_vert_data, *shader_triangles_frag_data;
     uint64_t       shader_triangles_vert_size, shader_triangles_frag_size;
 
-    auto                driver = SDL_GetGPUDeviceDriver(g_data.init_info.device);
+    const char*         driver = SDL_GetGPUDeviceDriver(g_data.init_info.device);
     SDL_GPUShaderFormat shader_format;
     if (SDL_strcmp(driver, "vulkan") == 0) {
       shader_format              = SDL_GPU_SHADERFORMAT_SPIRV;
@@ -68,7 +66,7 @@ bool im3d_sdl3_gpu_init(const Im3d_SDL3_GPU_Init_Info& info) {
       shader_triangles_frag_data = im3d_triangles_frag_dxil;
       shader_triangles_frag_size = sizeof(im3d_triangles_frag_dxil);
     } else if (SDL_strcmp(driver, "metal") == 0) {
-      auto supported_formats = SDL_GetGPUShaderFormats(g_data.init_info.device);
+      SDL_GPUShaderFormat supported_formats = SDL_GetGPUShaderFormats(g_data.init_info.device);
       if (supported_formats & SDL_GPU_SHADERFORMAT_METALLIB) {
         shader_format = SDL_GPU_SHADERFORMAT_METALLIB;
         // TODO: Add metallib shaders.
@@ -168,10 +166,10 @@ bool im3d_sdl3_gpu_init(const Im3d_SDL3_GPU_Init_Info& info) {
         }
       }
 
-      auto info              = pipeline_info;
-      info.primitive_type    = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
-      info.vertex_shader     = vertex_shader;
-      info.fragment_shader   = fragment_shader;
+      SDL_GPUGraphicsPipelineCreateInfo info = pipeline_info;
+      info.primitive_type                    = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
+      info.vertex_shader                     = vertex_shader;
+      info.fragment_shader                   = fragment_shader;
       g_data.pipeline_points = SDL_CreateGPUGraphicsPipeline(g_data.init_info.device, &info);
       if (g_data.pipeline_points == nullptr) {
         SDL_LogError(
@@ -225,10 +223,10 @@ bool im3d_sdl3_gpu_init(const Im3d_SDL3_GPU_Init_Info& info) {
         }
       }
 
-      auto info             = pipeline_info;
-      info.primitive_type   = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
-      info.vertex_shader    = vertex_shader;
-      info.fragment_shader  = fragment_shader;
+      SDL_GPUGraphicsPipelineCreateInfo info = pipeline_info;
+      info.primitive_type                    = SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP;
+      info.vertex_shader                     = vertex_shader;
+      info.fragment_shader                   = fragment_shader;
       g_data.pipeline_lines = SDL_CreateGPUGraphicsPipeline(g_data.init_info.device, &info);
       if (g_data.pipeline_lines == nullptr) {
         SDL_LogError(
@@ -282,9 +280,9 @@ bool im3d_sdl3_gpu_init(const Im3d_SDL3_GPU_Init_Info& info) {
         }
       }
 
-      auto info                 = pipeline_info;
-      info.vertex_shader        = vertex_shader;
-      info.fragment_shader      = fragment_shader;
+      SDL_GPUGraphicsPipelineCreateInfo info = pipeline_info;
+      info.vertex_shader                     = vertex_shader;
+      info.fragment_shader                   = fragment_shader;
       g_data.pipeline_triangles = SDL_CreateGPUGraphicsPipeline(g_data.init_info.device, &info);
       if (g_data.pipeline_triangles == nullptr) {
         SDL_LogError(
@@ -404,16 +402,18 @@ void im3d_sdl3_gpu_new_frame(const Im3d_SDL3_GPU_Frame_Info& info) {
     app_data.m_projScaleY = SDL_tanf(info.fov_rad * 0.5f) * 2.0f;
   }
 
-  Im3d::Vec2 cursor_position = info.cursor_position;
-  cursor_position.x          = (cursor_position.x / info.viewport_size.x) * 2.0f - 1.0f;
-  cursor_position.y          = (cursor_position.y / info.viewport_size.y) * 2.0f - 1.0f;
-  cursor_position.y          = -cursor_position.y;
+  Im3d::Vec2           cursor_position;
+  SDL_MouseButtonFlags mouse_button_state =
+      SDL_GetMouseState(&cursor_position.x, &cursor_position.y);
+
+  cursor_position.x = (cursor_position.x / info.viewport_size.x) * 2.0f - 1.0f;
+  cursor_position.y = (cursor_position.y / info.viewport_size.y) * 2.0f - 1.0f;
+  cursor_position.y = -cursor_position.y;
   if (info.ortho) {
-    app_data.m_cursorRayOrigin.x = cursor_position.x / info.view_to_clip_transform(0, 0);
-    app_data.m_cursorRayOrigin.y = cursor_position.y / info.view_to_clip_transform(1, 1);
-    app_data.m_cursorRayOrigin.z = 0.0f;
-    app_data.m_cursorRayOrigin =
-        view_to_world * Im3d::Vec4(Im3d::Normalize(app_data.m_cursorRayOrigin), 1.0f);
+    app_data.m_cursorRayOrigin.x  = cursor_position.x / info.view_to_clip_transform(0, 0);
+    app_data.m_cursorRayOrigin.y  = cursor_position.y / info.view_to_clip_transform(1, 1);
+    app_data.m_cursorRayOrigin.z  = 0.0f;
+    app_data.m_cursorRayOrigin    = view_to_world * Im3d::Vec4(app_data.m_cursorRayOrigin, 1.0f);
     app_data.m_cursorRayDirection = view_to_world * Im3d::Vec4(0.0f, 0.0f, -1.0f, 0.0f);
   } else {
     app_data.m_cursorRayOrigin      = app_data.m_viewOrigin;
@@ -421,11 +421,25 @@ void im3d_sdl3_gpu_new_frame(const Im3d_SDL3_GPU_Frame_Info& info) {
     app_data.m_cursorRayDirection.y = cursor_position.y / info.view_to_clip_transform(1, 1);
     app_data.m_cursorRayDirection.z = -1.0f;
     app_data.m_cursorRayDirection =
-        view_to_world * Im3d::Vec4(Im3d::Normalize(app_data.m_cursorRayDirection), 1.0f);
+        view_to_world * Im3d::Vec4(Im3d::Normalize(app_data.m_cursorRayDirection), 0.0f);
   }
 
   g_data.world_to_clip_transform = info.view_to_clip_transform * info.world_to_view_transform;
   app_data.setCullFrustum(g_data.world_to_clip_transform, false);
+
+  app_data.m_keyDown[Im3d::Action_Select] = (mouse_button_state & SDL_BUTTON_LMASK) != 0;
+
+  SDL_Keymod  keymod_state                          = SDL_GetModState();
+  const bool* keyboard_state                        = SDL_GetKeyboardState(nullptr);
+  bool        ctrl_down                             = (keymod_state & SDL_KMOD_CTRL) != 0;
+  app_data.m_keyDown[Im3d::Action_GizmoLocal]       = ctrl_down && keyboard_state[SDL_SCANCODE_L];
+  app_data.m_keyDown[Im3d::Action_GizmoTranslation] = ctrl_down && keyboard_state[SDL_SCANCODE_T];
+  app_data.m_keyDown[Im3d::Action_GizmoRotation]    = ctrl_down && keyboard_state[SDL_SCANCODE_R];
+  app_data.m_keyDown[Im3d::Action_GizmoScale]       = ctrl_down && keyboard_state[SDL_SCANCODE_S];
+
+  app_data.m_snapTranslation = ctrl_down ? 0.1f : 0.0f;
+  app_data.m_snapRotation    = ctrl_down ? Im3d::Radians(30.0f) : 0.0f;
+  app_data.m_snapScale       = ctrl_down ? 0.5f : 0.0f;
 }
 
 void im3d_sdl3_gpu_prepare_draw_data(SDL_GPUCommandBuffer* command_buffer) {

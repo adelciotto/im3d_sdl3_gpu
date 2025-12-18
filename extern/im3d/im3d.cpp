@@ -1554,7 +1554,7 @@ void Vector<T>::reserve(U32 _capacity)
 template <typename T>
 void Vector<T>::resize(U32 _size, const T& _val)
 {
-	IM3D_ASSERT(_size >= m_size); // only support growing the vector
+	// IM3D_ASSERT(_size >= m_size); // only support growing the vector
 	reserve(_size);
 	while (m_size < _size)
 	{
@@ -1566,7 +1566,7 @@ void Vector<T>::resize(U32 _size, const T& _val)
 template <typename T>
 void Vector<T>::resize(U32 _size)
 {
-	IM3D_ASSERT(_size >= m_size); // only support growing the vector
+	// IM3D_ASSERT(_size >= m_size); // only support growing the vector
 	reserve(_size);
 	m_size = _size;
 }

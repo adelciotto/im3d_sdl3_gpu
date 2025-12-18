@@ -112,7 +112,9 @@ if [ $shaders -eq 1 ]; then
 fi
 
 echo "Compiling example..."
-$cc_example_compile ../src/main.cpp \
+$cc_example_compile \
+  ../src/main.cpp \
+  ../src/util.cpp \
   ../src/im3d_sdl3_gpu.cpp \
   ../extern/im3d/im3d.cpp \
   ../extern/imgui/imgui.cpp \

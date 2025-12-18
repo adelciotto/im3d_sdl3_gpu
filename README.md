@@ -1,9 +1,11 @@
-# SDL3 GPU SHADERS CROSS COMPILE EXAMPLE
+# IM3D SDL3 GPU EXAMPLE
 
-This repository contains example code for cross compiling shaders at both build-time and run-time using SDL3 and SDL3_shadercross.
-In debug mode the shaders are live reloaded on any changes.
+This repository contains a SDL3 GPU backend for [im3d](https://github.com/john-chapman/im3d) and an example app demonstrating it's usage.
 
-[Demo Video](https://anthonydelciotto.com/media/sdl3_gpu_shaders_cross_compile.mp4)
+![preview](preview.png)
+
+
+If you just want to use this backend
 
 ## Build
 
@@ -40,9 +42,11 @@ You should see the following output:
 
 ```
 [release mode]
-Compiling shaders...
-Compiling source files...
-sdl3_gpu_shaders_cross_compile.cpp
+Compiling example...
+main.cpp
+util.cpp
+im3d_sdl3_gpu.cpp
+im3d.cpp
 imgui.cpp
 imgui_demo.cpp
 imgui_draw.cpp
@@ -55,9 +59,9 @@ Done!
 ```
 
 
-If everything worked correctly, there will be a `build_release` folder in the root level of the project, and it will contain a freshly-built `sdl3_gpu_shaders_cross_compile.exe`.
+If everything worked correctly, there will be a `build_release` folder in the root level of the project, and it will contain a freshly-built `im3d_sdl3_gpu_example.exe`.
 
-This `sdl3_gpu_shaders_cross_compile.exe` has been built in release mode. If you'd like to modify the source, debug it and live-reload shaders, you can just run `build.bat` with no arguments for a debug build. The executable will be in a `build_debug` folder.
+This `im3d_sdl3_gpu_example.exe` has been built in release mode. If you'd like to modify the source and debug it, you can just run `build.bat` with no arguments for a debug build. The executable will be in a `build_debug` folder.
 
 ### Linux
 
@@ -76,19 +80,27 @@ On the first run SDL3 will be downloaded and compiled to `extern/SDL3/linux`. On
 
 ```
 [release mode]
-Compiling shaders...
-Compiling source files...
+Compiling example...
 Done!
 ```
 
 
-If everything worked correctly, there will be a `build_release` folder in the root level of the project, and it will contain a freshly-built `sdl3_gpu_shaders_cross_compile` executable.
+If everything worked correctly, there will be a `build_release` folder in the root level of the project, and it will contain a freshly-built `im3d_sdl3_gpu_example` executable.
 
-This `sdl3_gpu_shaders_cross_compile` has been built in release mode. If you'd like to modify the source, debug it and live-reload shaders, you can just run `build_linux.sh` with no arguments for a debug build. The executable will be in a `build_debug` folder.
+This `im3d_sdl3_gpu_example` has been built in release mode. If you'd like to modify the source and debug it, you can just run `build_linux.sh` with no arguments for a debug build. The executable will be in a `build_debug` folder.
+
+### Shader
+
+The im3d shader is pre-compiled and the binary code is embedded in `im3d_sdl3_gpu_shaders.h`. If you'd like to modify the shader, you can run `build shaders` to compile the shader to all supported formats and export the data to the `im3d_sdl3_gpu_shaders.h` file.
+
+## TODO
+
+- [ ] Implement text drawing in the backend using some code from my [msdf text rendering example](https://github.com/adelciotto/sdl3_gpu_msdf_text).
 
 ## Dependencies / Tools
 
 * [HandmadeMath](https://github.com/HandmadeMath/HandmadeMath)
 * [SDL3](https://wiki.libsdl.org/SDL3/FrontPage)
+* [im3d](https://github.com/john-chapman/im3d)
 * [ImGui](https://github.com/ocornut/imgui)
 * [SDL_shadercross](https://github.com/libsdl-org/SDL_shadercross) for compiling shaders.
